@@ -1,0 +1,56 @@
+{
+  "social_media": [
+    {
+      "name": "WW (Weight Watchers)",
+      "platforms": ["instagram", "facebook", "tiktok", "youtube"],
+      "notes": "Points-based, community-first, GLP-1 pivot"
+    },
+    {
+      "name": "Noom",
+      "platforms": ["instagram", "facebook", "tiktok", "youtube"],
+      "notes": "Psychology + behaviour change, younger skew"
+    },
+    {
+      "name": "Juniper",
+      "platforms": ["instagram", "facebook", "tiktok"],
+      "notes": "GLP-1 medication + coaching, women 30–50, AU market"
+    },
+    {
+      "name": "Kic",
+      "platforms": ["instagram", "tiktok", "youtube", "facebook"],
+      "notes": "Body-neutral, anti-diet, Australian women — strong organic social"
+    },
+    {
+      "name": "Optislim",
+      "platforms": ["instagram", "facebook"],
+      "notes": "Pharmacy meal replacement, retail distribution, AU market"
+    }
+  ],
+  "podcasts": [
+    {
+      "name": "Huberman Lab",
+      "host": "Andrew Huberman",
+      "notes": "Science-based health & performance, massive reach"
+    },
+    {
+      "name": "Feel Better Live More",
+      "host": "Dr Rangan Chatterjee",
+      "notes": "UK-based GP, lifestyle medicine, large female audience"
+    },
+    {
+      "name": "Zoe Science & Nutrition",
+      "host": "Jonathan Wolf",
+      "notes": "Science-backed nutrition, UK/US, strong credibility signals"
+    },
+    {
+      "name": "The Doctor's Kitchen",
+      "host": "Dr Rupy Aujla",
+      "notes": "Food as medicine, UK GP, recipe-forward"
+    },
+    {
+      "name": "On Purpose with Jay Shetty",
+      "host": "Jay Shetty",
+      "notes": "Mindset & wellness, huge audience, less clinical"
+    }
+  ]
+}
