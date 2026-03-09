@@ -141,11 +141,55 @@ digital health programs to organisations rather than individuals directly.
 
 **Key B2B product frameworks:**
 - **CDMP (Chronic Disease Management Plan):** Digital weight management and behaviour change
-  program delivered to insurer members or employees with chronic health conditions
+  program delivered to insurer members or employees with chronic health conditions. Structured
+  in tiers by duration (12, 16, or 24 weeks) and number of Health Coaching Sessions (HCS).
 - **PSP (Patient Support Program):** Support programs for pharmaceutical clients, sitting
   alongside prescribed treatments
 - **Corporate Wellness Program:** Based on the CSIRO Total Wellbeing Diet; 10+ years of
   corporate delivery; outcome-focused; costed per-head based on org size
+- **Member Benefits Marketing Offer:** A lighter-touch partnership where health funds promote
+  Digital Wellness products (TWD, Fast Start) to their members as a discounted benefit
+- **Primary Prevention Hospital Program:** Delivered with select health funds to prevent
+  hospitalisation in high-risk members
+
+**Glossary (for agents referencing B2B programs):**
+- **HCS** = Health Coaching Session (1:1 session with an accredited practising dietitian)
+- **FS** = Fast Start (meal replacement program)
+- **CDMP** = Chronic Disease Management Plan
+- **TWD** = Total Wellbeing Diet
+
+---
+
+#### Active Health Fund Partners (Australia)
+
+| Health Fund | Program Type | Structure |
+|------------|-------------|-----------|
+| **CBHS Health Fund** | CDMP + Member Benefits | 16 Wk / 10 HCS — $250K credit commitment |
+| **Cessnock District (Hunter Health)** | Extras Program | Free trial; eligibility via extras limit + GP referral form |
+| **GMHBA / Frank Health Insurance** | Member Benefit (CDMP in pipeline) | Member benefit live; CDMP business case with board, targeting Feb launch |
+| **HBF Health** | Primary Prevention Hospital Program | 12 Wk / 3 HCS / book included |
+| **HCF (Hospitals Contribution Fund of Australia)** | Primary Prevention Hospital Program | 16 Wk / 2 HCS |
+| **Mildura District Hospital Fund** | CDMP | 24 Wk / 9–15 HCS |
+| **Peoplecare Health** | 2× CDMPs + Member Benefits | 24 Wk / 10 Sessions AND 16 Wk / 7 Sessions |
+| **Phoenix Health Fund** | 2× CDMPs + Member Benefits | 24 Wk / 10 Sessions AND 16 Wk / 7 Sessions |
+| **Police Health** (incl. emergency services health) | CDMP + Fast Start (pilot) | 16 Wk / 10 Sessions with FS — 100 member pilot |
+| **Queensland Country Health Fund** (incl. See-u, both owned by HBF) | CDMP | 16 Wk / 10 HCS |
+| **Teacher Health** (incl. Nurses & Midwives Health, Uni Health) | CDMP + Member Benefits | 24 Wk / 15 HCS |
+| **TUH** (incl. UH, owned by Teachers Health) | CDMP + Member Benefits | 24 Wk / 10 HCS |
+| **RT Health** (owned by HCF) | Program | 12 Wk |
+
+---
+
+#### Other B2B / Channel Partners
+
+| Partner | Channel Type | Structure |
+|---------|-------------|-----------|
+| **Chemist2U** | Pharmacy / digital referral | Program for people ineligible for weight loss medications — commission to Chemist2U |
+| **Habit Health** | NZ corporate wellness | Program for NZ consumers and employers offering staff wellbeing — commission model |
+| **Viatport** | Employee wellbeing app | Content licensing — Digital Wellness content integrated into Viatport's app |
+| **Pharmacy 777** | Retail pharmacy | 1-month TWD + 3-week Fast Start Starter Pack sold in-pharmacy |
+
+---
 
 **Compliance & accreditation:**
 - HIPAA and GDPR compliant
