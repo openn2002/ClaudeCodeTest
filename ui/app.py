@@ -28,8 +28,10 @@ REPORTS_DIR  = ROOT / "reports"
 REPORTS_DIR.mkdir(exist_ok=True)
 
 # ── Agent system prompts ───────────────────────────────────────────────────────
-SOCIAL_AGENT_PATH  = ROOT / ".claude" / "agents" / "competitor-social-analyst.md"
-PODCAST_AGENT_PATH = ROOT / ".claude" / "agents" / "podcast-competitor-analyst.md"
+SOCIAL_AGENT_PATH   = ROOT / ".claude" / "agents" / "competitor-social-analyst.md"
+PODCAST_AGENT_PATH  = ROOT / ".claude" / "agents" / "podcast-competitor-analyst.md"
+RESEARCH_AGENT_PATH = ROOT / ".claude" / "agents" / "research-agent.md"
+VIDEO_AGENT_PATH    = ROOT / ".claude" / "agents" / "video-idea-agent.md"
 
 
 def load_agent_prompt(path: Path) -> str:
@@ -102,7 +104,7 @@ st.set_page_config(
 with st.sidebar:
     st.image("https://www.digitalwellness.com/favicon.ico", width=32)
     st.markdown("## Digital Wellness")
-    st.markdown("### Competitor Intelligence")
+    st.markdown("### Content Intelligence")
     st.divider()
 
     st.markdown("**API Settings**")
@@ -120,9 +122,10 @@ with st.sidebar:
     st.caption(f"Reports saved to `{REPORTS_DIR.relative_to(ROOT)}/`")
 
 # ── Main tabs ──────────────────────────────────────────────────────────────────
-tab_social, tab_podcasts, tab_reports = st.tabs([
+tab_social, tab_podcasts, tab_pipeline, tab_reports = st.tabs([
     "📱 Social Media Competitors",
     "🎙️ Podcast Competitors",
+    "🎬 Content Pipeline",
     "📁 Reports",
 ])
 
@@ -378,7 +381,214 @@ with tab_podcasts:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 3 — REPORTS LIBRARY
+# TAB 3 — CONTENT PIPELINE
+# ════════════════════════════════════════════════════════════════════════════
+with tab_pipeline:
+    st.header("Content Pipeline")
+    st.caption(
+        "Three-step pipeline: Research trends → Analyse competitors → Generate video ideas. "
+        "Each step's output feeds into the next. All reports are saved automatically."
+    )
+
+    st.divider()
+
+    # ── Pipeline configuration ────────────────────────────────────────────────
+    st.subheader("Configure Pipeline")
+
+    pipe_col1, pipe_col2 = st.columns(2)
+
+    with pipe_col1:
+        pipe_market = st.radio(
+            "Market focus",
+            ["Both AU & US", "Australia only (CSIRO TWD)", "United States only (Mayo Clinic Diet)"],
+            horizontal=False,
+        )
+
+        st.markdown("**Research focus areas**")
+        focus_topics    = st.checkbox("Trending topics", value=True)
+        focus_keywords  = st.checkbox("Search keywords", value=True)
+        focus_platforms = st.checkbox("Platform content trends", value=True)
+        focus_glp1      = st.checkbox("GLP-1 landscape", value=True)
+
+    with pipe_col2:
+        pipe_data = load_competitors()
+        pipe_social_list = pipe_data.get("social_media", [])
+
+        if pipe_social_list:
+            pipe_selected_comps = st.multiselect(
+                "Competitors to analyse (Step 2)",
+                [c["name"] for c in pipe_social_list],
+                default=[c["name"] for c in pipe_social_list],
+                help="Competitor social analysis runs in Step 2 and enriches the video ideas in Step 3.",
+            )
+        else:
+            st.info("No competitors added yet. Add some in the Social Media tab to include competitor analysis.")
+            pipe_selected_comps = []
+
+        pipe_extra = st.text_area(
+            "Additional instructions (optional)",
+            placeholder="e.g. Prioritise GLP-1 content angles. Focus on the 35–50 demographic. "
+                         "We have a dietitian available for on-camera content.",
+            height=100,
+        )
+
+    st.divider()
+
+    # ── Run button ────────────────────────────────────────────────────────────
+    focus_areas = []
+    if focus_topics:    focus_areas.append("trending topics")
+    if focus_keywords:  focus_areas.append("search keyword opportunities")
+    if focus_platforms: focus_areas.append("platform content trends")
+    if focus_glp1:      focus_areas.append("GLP-1 landscape")
+
+    run_pipe_col, _ = st.columns([2, 3])
+    with run_pipe_col:
+        run_pipeline = st.button(
+            "🚀 Run Full Pipeline",
+            use_container_width=True,
+            type="primary",
+            disabled=not focus_areas,
+        )
+
+    if run_pipeline:
+        today = datetime.date.today().strftime("%Y-%m-%d")
+
+        # ── Step 1: Research ─────────────────────────────────────────────────
+        st.markdown("---")
+        st.markdown("### Step 1 of 3 — Research")
+        step1_status = st.empty()
+        step1_status.info("Running research... this may take a minute.")
+
+        with st.expander("Research output", expanded=True):
+            step1_area = st.empty()
+            step1_buffer = []
+
+            def on_step1_chunk(text):
+                step1_buffer.append(text)
+                step1_area.markdown("".join(step1_buffer))
+
+            research_msg = (
+                f"Research the following focus areas for Digital Wellness content strategy:\n\n"
+                f"Focus areas: {', '.join(focus_areas)}\n\n"
+                f"Market: {pipe_market}\n\n"
+                f"We are Digital Wellness, the technology company behind the CSIRO Total Wellbeing Diet "
+                f"(Australia) and the Mayo Clinic Diet (United States). Our audience skews 50+, female, "
+                f"science-credibility-seeking, with a strategic goal to expand to the 35–50 demographic. "
+                f"GLP-1 is a major strategic priority — we have a pilot underway with Eli Lilly.\n\n"
+                f"{pipe_extra}"
+            ).strip()
+
+            try:
+                research_result = run_analysis(
+                    load_agent_prompt(RESEARCH_AGENT_PATH),
+                    research_msg,
+                    on_chunk=on_step1_chunk,
+                )
+                report_path = REPORTS_DIR / f"pipeline-research-{today}.md"
+                report_path.write_text(research_result)
+                step1_status.success(f"Research complete — saved to `{report_path.name}`")
+            except Exception as e:
+                step1_status.error(f"Research step failed: {e}")
+                st.stop()
+
+        # ── Step 2: Competitor Analysis ───────────────────────────────────────
+        st.markdown("### Step 2 of 3 — Competitor Analysis")
+        step2_status = st.empty()
+
+        if not pipe_selected_comps:
+            step2_status.warning("No competitors selected — skipping competitor analysis.")
+            competitor_result = "(No competitor analysis was run — no competitors were selected.)"
+        else:
+            step2_status.info("Running competitor analysis...")
+
+            with st.expander("Competitor analysis output", expanded=True):
+                step2_area = st.empty()
+                step2_buffer = []
+
+                def on_step2_chunk(text):
+                    step2_buffer.append(text)
+                    step2_area.markdown("".join(step2_buffer))
+
+                selected_details = [c for c in pipe_social_list if c["name"] in pipe_selected_comps]
+                competitor_lines = "\n".join(
+                    f"- {c['name']} ({', '.join(c.get('platforms', []))}): {c.get('notes', '')}"
+                    for c in selected_details
+                )
+
+                competitor_msg = (
+                    f"Analyse the following competitors for Digital Wellness:\n\n"
+                    f"{competitor_lines}\n\n"
+                    f"Market: {pipe_market}\n\n"
+                    f"Context: We are preparing to produce video content for TikTok, Instagram, YouTube, "
+                    f"and Facebook. We need to understand what hooks, formats, and topics are working for "
+                    f"these competitors so we can identify gaps and opportunities for our science-backed "
+                    f"content (CSIRO Total Wellbeing Diet / Mayo Clinic Diet).\n\n"
+                    f"Research context informing this analysis:\n{research_result[:2000]}\n\n"
+                    f"{pipe_extra}"
+                ).strip()
+
+                try:
+                    competitor_result = run_analysis(
+                        load_agent_prompt(SOCIAL_AGENT_PATH),
+                        competitor_msg,
+                        on_chunk=on_step2_chunk,
+                    )
+                    slug = "multi" if len(pipe_selected_comps) > 1 else slugify(pipe_selected_comps[0])
+                    report_path = REPORTS_DIR / f"pipeline-competitor-{slug}-{today}.md"
+                    report_path.write_text(competitor_result)
+                    step2_status.success(f"Competitor analysis complete — saved to `{report_path.name}`")
+                except Exception as e:
+                    step2_status.error(f"Competitor analysis step failed: {e}")
+                    st.stop()
+
+        # ── Step 3: Video Ideas ───────────────────────────────────────────────
+        st.markdown("### Step 3 of 3 — Video Ideas")
+        step3_status = st.empty()
+        step3_status.info("Generating video ideas and production briefs...")
+
+        with st.expander("Video ideas & briefs", expanded=True):
+            step3_area = st.empty()
+            step3_buffer = []
+
+            def on_step3_chunk(text):
+                step3_buffer.append(text)
+                step3_area.markdown("".join(step3_buffer))
+
+            video_msg = (
+                f"Generate video content ideas and production briefs for Digital Wellness.\n\n"
+                f"Market: {pipe_market}\n\n"
+                f"--- RESEARCH FINDINGS ---\n{research_result}\n\n"
+                f"--- COMPETITOR ANALYSIS ---\n{competitor_result}\n\n"
+                f"Using the research trends and competitor intelligence above, generate:\n"
+                f"1. A ranked list of 10–15 video concepts\n"
+                f"2. Full production briefs for the top 3 concepts\n\n"
+                f"Prioritise ideas that exploit gaps the competitors are not filling and that leverage "
+                f"our institutional science credibility (CSIRO / Mayo Clinic) in ways they cannot match.\n\n"
+                f"{pipe_extra}"
+            ).strip()
+
+            try:
+                video_result = run_analysis(
+                    load_agent_prompt(VIDEO_AGENT_PATH),
+                    video_msg,
+                    on_chunk=on_step3_chunk,
+                )
+                report_path = REPORTS_DIR / f"pipeline-video-ideas-{today}.md"
+                report_path.write_text(video_result)
+                step3_status.success(f"Video ideas complete — saved to `{report_path.name}`")
+            except Exception as e:
+                step3_status.error(f"Video ideas step failed: {e}")
+                st.stop()
+
+        st.markdown("---")
+        st.success(
+            "Pipeline complete! All three reports saved to the Reports tab. "
+            "Start with the video briefs — they're ready to hand to a creator."
+        )
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# TAB 4 — REPORTS LIBRARY
 # ════════════════════════════════════════════════════════════════════════════
 with tab_reports:
     st.header("Reports Library")
