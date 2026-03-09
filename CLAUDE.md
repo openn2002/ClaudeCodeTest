@@ -188,6 +188,7 @@ digital health programs to organisations rather than individuals directly.
 | **Habit Health** | NZ corporate wellness | Program for NZ consumers and employers offering staff wellbeing — commission model |
 | **Viatport** | Employee wellbeing app | Content licensing — Digital Wellness content integrated into Viatport's app |
 | **Pharmacy 777** | Retail pharmacy | 1-month TWD + 3-week Fast Start Starter Pack sold in-pharmacy |
+| **Eli Lilly** | Pharma PSP (pilot — in negotiation) | Wrap-around Patient Support Program: all patients prescribed an Eli Lilly GLP-1 product receive a TWD program. Objective: improve retention, adherence, and clinical efficacy. Pilot stage as of March 2026 — structure TBC. |
 
 ---
 
@@ -304,9 +305,12 @@ following in mind:
    intent and willingness to pay. Content and copy should never condescend or ignore this group.
 
 3. **GLP-1 is a major strategic opportunity.** The Mayo Clinic Diet already has a dedicated
-   Weight-Loss Medications Program. The CSIRO TWD has not yet built this out. Content that
-   positions our programs as the ideal structure and support layer for GLP-1 users is a high-priority
-   growth lever — particularly given our 50+ demographic skews toward the primary GLP-1 audience.
+   Weight-Loss Medications Program. The CSIRO TWD has not yet built this out publicly, but a
+   pharma PSP pilot is underway with **Eli Lilly** — all patients prescribed their GLP-1 products
+   will receive a TWD program as a wrap-around support layer (retention, adherence, efficacy).
+   Content that positions our programs as the ideal structure and support layer for GLP-1 users
+   is a high-priority growth lever — particularly given our 50+ demographic skews toward the
+   primary GLP-1 audience.
 
 4. **Fast Start (AU) is a conversion and retention tool.** It serves members who need simplicity
    or faster initial results. It is not a standalone brand — it is a product that feeds people
