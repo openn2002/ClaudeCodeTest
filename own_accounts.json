@@ -1,0 +1,22 @@
+{
+  "accounts": [
+    {
+      "brand": "CSIRO Total Wellbeing Diet",
+      "market": "AU",
+      "instagram": "@totalwellbeingdiet",
+      "facebook": "totalwellbeingdiet",
+      "tiktok": "@totalwellbeingdiet",
+      "youtube": "Total Wellbeing Diet",
+      "linkedin": ""
+    },
+    {
+      "brand": "Mayo Clinic Diet",
+      "market": "US",
+      "instagram": "@mayoclinicdiet",
+      "facebook": "MayoClinicDiet",
+      "tiktok": "@mayoclinicdiet",
+      "youtube": "Mayo Clinic Diet",
+      "linkedin": ""
+    }
+  ]
+}

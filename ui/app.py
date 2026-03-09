@@ -22,16 +22,19 @@ import anthropic
 import streamlit as st
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-ROOT         = Path(__file__).parent.parent
-COMPETITORS  = ROOT / "competitors.json"
-REPORTS_DIR  = ROOT / "reports"
+ROOT          = Path(__file__).parent.parent
+COMPETITORS   = ROOT / "competitors.json"
+OWN_ACCOUNTS  = ROOT / "own_accounts.json"
+PILLARS_FILE  = ROOT / "pillars.json"
+REPORTS_DIR   = ROOT / "reports"
 REPORTS_DIR.mkdir(exist_ok=True)
 
 # ── Agent system prompts ───────────────────────────────────────────────────────
-SOCIAL_AGENT_PATH   = ROOT / ".claude" / "agents" / "competitor-social-analyst.md"
-PODCAST_AGENT_PATH  = ROOT / ".claude" / "agents" / "podcast-competitor-analyst.md"
-RESEARCH_AGENT_PATH = ROOT / ".claude" / "agents" / "research-agent.md"
-VIDEO_AGENT_PATH    = ROOT / ".claude" / "agents" / "video-idea-agent.md"
+SOCIAL_AGENT_PATH      = ROOT / ".claude" / "agents" / "competitor-social-analyst.md"
+PODCAST_AGENT_PATH     = ROOT / ".claude" / "agents" / "podcast-competitor-analyst.md"
+RESEARCH_AGENT_PATH    = ROOT / ".claude" / "agents" / "research-agent.md"
+VIDEO_AGENT_PATH       = ROOT / ".claude" / "agents" / "video-idea-agent.md"
+OWN_CONTENT_AGENT_PATH = ROOT / ".claude" / "agents" / "own-content-analyst.md"
 
 
 def load_agent_prompt(path: Path) -> str:
@@ -55,6 +58,25 @@ def load_competitors() -> dict:
 def save_competitors(data: dict):
     with open(COMPETITORS, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def load_own_accounts() -> dict:
+    if OWN_ACCOUNTS.exists():
+        with open(OWN_ACCOUNTS) as f:
+            return json.load(f)
+    return {"accounts": []}
+
+
+def save_own_accounts(data: dict):
+    with open(OWN_ACCOUNTS, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def load_pillars() -> list:
+    if PILLARS_FILE.exists():
+        with open(PILLARS_FILE) as f:
+            return json.load(f).get("pillars", [])
+    return []
 
 
 # ── Report helpers ─────────────────────────────────────────────────────────────
@@ -122,10 +144,11 @@ with st.sidebar:
     st.caption(f"Reports saved to `{REPORTS_DIR.relative_to(ROOT)}/`")
 
 # ── Main tabs ──────────────────────────────────────────────────────────────────
-tab_social, tab_podcasts, tab_pipeline, tab_reports = st.tabs([
+tab_social, tab_podcasts, tab_pipeline, tab_own, tab_reports = st.tabs([
     "📱 Social Media Competitors",
     "🎙️ Podcast Competitors",
     "🎬 Content Pipeline",
+    "📊 Own Content",
     "📁 Reports",
 ])
 
@@ -588,7 +611,188 @@ with tab_pipeline:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 4 — REPORTS LIBRARY
+# TAB 4 — OWN CONTENT AUDIT
+# ════════════════════════════════════════════════════════════════════════════
+with tab_own:
+    st.header("Own Content Audit")
+    st.caption(
+        "Scrape your own social accounts, classify each post by content pillar, "
+        "and identify which pillars are over- or under-indexed relative to engagement."
+    )
+
+    own_data = load_own_accounts()
+    accounts_list = own_data.get("accounts", [])
+    pillars = load_pillars()
+
+    # ── Account handles ───────────────────────────────────────────────────────
+    col_accounts, col_pillars = st.columns([3, 2])
+
+    with col_accounts:
+        st.subheader("Account Handles")
+        st.caption("Edit your own social media handles below. Changes are saved immediately.")
+
+        PLATFORMS = ["instagram", "facebook", "tiktok", "youtube", "linkedin"]
+
+        for idx, account in enumerate(accounts_list):
+            with st.expander(
+                f"**{account['brand']}** ({account.get('market', '')})",
+                expanded=True,
+            ):
+                with st.form(f"account_form_{idx}"):
+                    new_brand = st.text_input("Brand name", value=account.get("brand", ""), key=f"brand_{idx}")
+                    new_market = st.selectbox(
+                        "Market",
+                        ["AU", "US", "Both"],
+                        index=["AU", "US", "Both"].index(account.get("market", "AU"))
+                        if account.get("market", "AU") in ["AU", "US", "Both"] else 0,
+                        key=f"market_{idx}",
+                    )
+                    new_handles = {}
+                    for plat in PLATFORMS:
+                        new_handles[plat] = st.text_input(
+                            plat.capitalize(),
+                            value=account.get(plat, ""),
+                            placeholder=f"e.g. @handle or page name",
+                            key=f"{plat}_{idx}",
+                        )
+                    save_col, del_col = st.columns([3, 1])
+                    with save_col:
+                        if st.form_submit_button("Save", use_container_width=True):
+                            accounts_list[idx] = {"brand": new_brand, "market": new_market, **new_handles}
+                            own_data["accounts"] = accounts_list
+                            save_own_accounts(own_data)
+                            st.success("Saved.")
+                            st.rerun()
+                    with del_col:
+                        if st.form_submit_button("Remove", use_container_width=True):
+                            accounts_list.pop(idx)
+                            own_data["accounts"] = accounts_list
+                            save_own_accounts(own_data)
+                            st.rerun()
+
+        with st.form("add_account_form", clear_on_submit=True):
+            st.markdown("**Add Account**")
+            a_brand = st.text_input("Brand name", placeholder="e.g. CSIRO Total Wellbeing Diet")
+            a_market = st.selectbox("Market", ["AU", "US", "Both"])
+            a_handles = {plat: st.text_input(plat.capitalize(), placeholder="", key=f"new_{plat}") for plat in PLATFORMS}
+            if st.form_submit_button("Add Account", use_container_width=True):
+                if a_brand:
+                    accounts_list.append({"brand": a_brand, "market": a_market, **a_handles})
+                    own_data["accounts"] = accounts_list
+                    save_own_accounts(own_data)
+                    st.success(f"Added {a_brand}")
+                    st.rerun()
+
+    with col_pillars:
+        st.subheader("Content Pillars")
+        st.caption("Posts will be classified into these 7 pillars.")
+        for pillar in pillars:
+            with st.expander(f"**{pillar['name']}**"):
+                st.markdown(pillar["description"])
+                st.caption("Keywords: " + ", ".join(pillar.get("keywords", [])))
+
+    st.divider()
+
+    # ── Run audit ─────────────────────────────────────────────────────────────
+    st.subheader("Run Content Audit")
+
+    if not accounts_list:
+        st.warning("Add at least one account above before running an audit.")
+    else:
+        own_col1, own_col2 = st.columns(2)
+
+        with own_col1:
+            selected_brands = st.multiselect(
+                "Accounts to audit",
+                [a["brand"] for a in accounts_list],
+                default=[a["brand"] for a in accounts_list],
+            )
+            own_platforms = st.multiselect(
+                "Platforms to scrape",
+                PLATFORMS,
+                default=["instagram", "tiktok", "youtube"],
+                help="The agent will pull recent posts from these platforms for each selected account.",
+            )
+
+        with own_col2:
+            own_market = st.radio(
+                "Market focus",
+                ["Both AU & US", "Australia only (CSIRO TWD)", "United States only (Mayo Clinic Diet)"],
+            )
+            own_extra = st.text_area(
+                "Additional instructions (optional)",
+                placeholder="e.g. Focus on the last 3 months only. Flag any posts related to GLP-1. "
+                             "Pay particular attention to which pillars are missing on TikTok.",
+                height=100,
+            )
+
+        run_own_col, _ = st.columns([2, 3])
+        with run_own_col:
+            run_own = st.button(
+                "🔍 Run Own Content Audit",
+                use_container_width=True,
+                type="primary",
+                disabled=not selected_brands or not own_platforms,
+            )
+
+        if run_own:
+            selected_account_details = [a for a in accounts_list if a["brand"] in selected_brands]
+
+            account_lines = []
+            for a in selected_account_details:
+                handle_parts = [
+                    f"{plat}: {a.get(plat, '').strip()}"
+                    for plat in own_platforms
+                    if a.get(plat, "").strip()
+                ]
+                if handle_parts:
+                    account_lines.append(
+                        f"- {a['brand']} ({a.get('market', '')}) — "
+                        + ", ".join(handle_parts)
+                    )
+
+            pillar_summary = "\n".join(
+                f"{i+1}. **{p['name']}**: {p['description']}"
+                for i, p in enumerate(pillars)
+            )
+
+            user_msg = (
+                f"Please audit the following Digital Wellness social media accounts:\n\n"
+                f"{chr(10).join(account_lines)}\n\n"
+                f"Platforms to scrape: {', '.join(own_platforms)}\n\n"
+                f"Market focus: {own_market}\n\n"
+                f"Classify each post into one of these 7 content pillars:\n{pillar_summary}\n\n"
+                f"For each pillar, calculate post count, percentage of total, average engagement, "
+                f"and identify the best-performing post. Then provide a gap analysis and strategic "
+                f"recommendations.\n\n"
+                f"{own_extra}"
+            ).strip()
+
+            system_prompt = load_agent_prompt(OWN_CONTENT_AGENT_PATH)
+
+            with st.spinner("Scraping and classifying content — this may take a couple of minutes..."):
+                own_output_area = st.empty()
+                own_buffer = []
+
+                def on_own_chunk(text):
+                    own_buffer.append(text)
+                    own_output_area.markdown("".join(own_buffer))
+
+                try:
+                    result = run_analysis(system_prompt, user_msg, on_chunk=on_own_chunk)
+                    today = datetime.date.today().strftime("%Y-%m-%d")
+                    brand_slug = slugify(selected_brands[0]) if len(selected_brands) == 1 else "multi"
+                    report_path = REPORTS_DIR / f"own-content-audit-{brand_slug}-{today}.md"
+                    report_path.write_text(result)
+                    st.success(f"Audit complete! Saved to `{report_path.name}`")
+                except ValueError as e:
+                    st.error(str(e))
+                except Exception as e:
+                    st.error(f"Audit failed: {e}")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# TAB 5 — REPORTS LIBRARY
 # ════════════════════════════════════════════════════════════════════════════
 with tab_reports:
     st.header("Reports Library")
