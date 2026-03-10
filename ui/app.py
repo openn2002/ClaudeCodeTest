@@ -425,6 +425,7 @@ with tab_pipeline:
             "Market focus",
             ["Both AU & US", "Australia only (CSIRO TWD)", "United States only (Mayo Clinic Diet)"],
             horizontal=False,
+            key="pipe_market",
         )
 
         st.markdown("**Research focus areas**")
@@ -718,6 +719,7 @@ with tab_own:
             own_market = st.radio(
                 "Market focus",
                 ["Both AU & US", "Australia only (CSIRO TWD)", "United States only (Mayo Clinic Diet)"],
+                key="own_market",
             )
             own_extra = st.text_area(
                 "Additional instructions (optional)",
