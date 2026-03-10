@@ -22,14 +22,19 @@ import anthropic
 import streamlit as st
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-ROOT         = Path(__file__).parent.parent
-COMPETITORS  = ROOT / "competitors.json"
-REPORTS_DIR  = ROOT / "reports"
+ROOT          = Path(__file__).parent.parent
+COMPETITORS   = ROOT / "competitors.json"
+OWN_ACCOUNTS  = ROOT / "own_accounts.json"
+PILLARS_FILE  = ROOT / "pillars.json"
+REPORTS_DIR   = ROOT / "reports"
 REPORTS_DIR.mkdir(exist_ok=True)
 
 # ── Agent system prompts ───────────────────────────────────────────────────────
-SOCIAL_AGENT_PATH  = ROOT / ".claude" / "agents" / "competitor-social-analyst.md"
-PODCAST_AGENT_PATH = ROOT / ".claude" / "agents" / "podcast-competitor-analyst.md"
+SOCIAL_AGENT_PATH      = ROOT / ".claude" / "agents" / "competitor-social-analyst.md"
+PODCAST_AGENT_PATH     = ROOT / ".claude" / "agents" / "podcast-competitor-analyst.md"
+RESEARCH_AGENT_PATH    = ROOT / ".claude" / "agents" / "research-agent.md"
+VIDEO_AGENT_PATH       = ROOT / ".claude" / "agents" / "video-idea-agent.md"
+OWN_CONTENT_AGENT_PATH = ROOT / ".claude" / "agents" / "own-content-analyst.md"
 
 
 def load_agent_prompt(path: Path) -> str:
@@ -53,6 +58,25 @@ def load_competitors() -> dict:
 def save_competitors(data: dict):
     with open(COMPETITORS, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def load_own_accounts() -> dict:
+    if OWN_ACCOUNTS.exists():
+        with open(OWN_ACCOUNTS) as f:
+            return json.load(f)
+    return {"accounts": []}
+
+
+def save_own_accounts(data: dict):
+    with open(OWN_ACCOUNTS, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def load_pillars() -> list:
+    if PILLARS_FILE.exists():
+        with open(PILLARS_FILE) as f:
+            return json.load(f).get("pillars", [])
+    return []
 
 
 # ── Report helpers ─────────────────────────────────────────────────────────────
@@ -102,7 +126,7 @@ st.set_page_config(
 with st.sidebar:
     st.image("https://www.digitalwellness.com/favicon.ico", width=32)
     st.markdown("## Digital Wellness")
-    st.markdown("### Competitor Intelligence")
+    st.markdown("### Content Intelligence")
     st.divider()
 
     st.markdown("**API Settings**")
@@ -120,9 +144,11 @@ with st.sidebar:
     st.caption(f"Reports saved to `{REPORTS_DIR.relative_to(ROOT)}/`")
 
 # ── Main tabs ──────────────────────────────────────────────────────────────────
-tab_social, tab_podcasts, tab_reports = st.tabs([
+tab_social, tab_podcasts, tab_pipeline, tab_own, tab_reports = st.tabs([
     "📱 Social Media Competitors",
     "🎙️ Podcast Competitors",
+    "🎬 Content Pipeline",
+    "📊 Own Content",
     "📁 Reports",
 ])
 
@@ -378,7 +404,395 @@ with tab_podcasts:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 3 — REPORTS LIBRARY
+# TAB 3 — CONTENT PIPELINE
+# ════════════════════════════════════════════════════════════════════════════
+with tab_pipeline:
+    st.header("Content Pipeline")
+    st.caption(
+        "Three-step pipeline: Research trends → Analyse competitors → Generate video ideas. "
+        "Each step's output feeds into the next. All reports are saved automatically."
+    )
+
+    st.divider()
+
+    # ── Pipeline configuration ────────────────────────────────────────────────
+    st.subheader("Configure Pipeline")
+
+    pipe_col1, pipe_col2 = st.columns(2)
+
+    with pipe_col1:
+        pipe_market = st.radio(
+            "Market focus",
+            ["Both AU & US", "Australia only (CSIRO TWD)", "United States only (Mayo Clinic Diet)"],
+            horizontal=False,
+        )
+
+        st.markdown("**Research focus areas**")
+        focus_topics    = st.checkbox("Trending topics", value=True)
+        focus_keywords  = st.checkbox("Search keywords", value=True)
+        focus_platforms = st.checkbox("Platform content trends", value=True)
+        focus_glp1      = st.checkbox("GLP-1 landscape", value=True)
+
+    with pipe_col2:
+        pipe_data = load_competitors()
+        pipe_social_list = pipe_data.get("social_media", [])
+
+        if pipe_social_list:
+            pipe_selected_comps = st.multiselect(
+                "Competitors to analyse (Step 2)",
+                [c["name"] for c in pipe_social_list],
+                default=[c["name"] for c in pipe_social_list],
+                help="Competitor social analysis runs in Step 2 and enriches the video ideas in Step 3.",
+            )
+        else:
+            st.info("No competitors added yet. Add some in the Social Media tab to include competitor analysis.")
+            pipe_selected_comps = []
+
+        pipe_extra = st.text_area(
+            "Additional instructions (optional)",
+            placeholder="e.g. Prioritise GLP-1 content angles. Focus on the 35–50 demographic. "
+                         "We have a dietitian available for on-camera content.",
+            height=100,
+        )
+
+    st.divider()
+
+    # ── Run button ────────────────────────────────────────────────────────────
+    focus_areas = []
+    if focus_topics:    focus_areas.append("trending topics")
+    if focus_keywords:  focus_areas.append("search keyword opportunities")
+    if focus_platforms: focus_areas.append("platform content trends")
+    if focus_glp1:      focus_areas.append("GLP-1 landscape")
+
+    run_pipe_col, _ = st.columns([2, 3])
+    with run_pipe_col:
+        run_pipeline = st.button(
+            "🚀 Run Full Pipeline",
+            use_container_width=True,
+            type="primary",
+            disabled=not focus_areas,
+        )
+
+    if run_pipeline:
+        today = datetime.date.today().strftime("%Y-%m-%d")
+
+        # ── Step 1: Research ─────────────────────────────────────────────────
+        st.markdown("---")
+        st.markdown("### Step 1 of 3 — Research")
+        step1_status = st.empty()
+        step1_status.info("Running research... this may take a minute.")
+
+        with st.expander("Research output", expanded=True):
+            step1_area = st.empty()
+            step1_buffer = []
+
+            def on_step1_chunk(text):
+                step1_buffer.append(text)
+                step1_area.markdown("".join(step1_buffer))
+
+            research_msg = (
+                f"Research the following focus areas for Digital Wellness content strategy:\n\n"
+                f"Focus areas: {', '.join(focus_areas)}\n\n"
+                f"Market: {pipe_market}\n\n"
+                f"We are Digital Wellness, the technology company behind the CSIRO Total Wellbeing Diet "
+                f"(Australia) and the Mayo Clinic Diet (United States). Our audience skews 50+, female, "
+                f"science-credibility-seeking, with a strategic goal to expand to the 35–50 demographic. "
+                f"GLP-1 is a major strategic priority — we have a pilot underway with Eli Lilly.\n\n"
+                f"{pipe_extra}"
+            ).strip()
+
+            try:
+                research_result = run_analysis(
+                    load_agent_prompt(RESEARCH_AGENT_PATH),
+                    research_msg,
+                    on_chunk=on_step1_chunk,
+                )
+                report_path = REPORTS_DIR / f"pipeline-research-{today}.md"
+                report_path.write_text(research_result)
+                step1_status.success(f"Research complete — saved to `{report_path.name}`")
+            except Exception as e:
+                step1_status.error(f"Research step failed: {e}")
+                st.stop()
+
+        # ── Step 2: Competitor Analysis ───────────────────────────────────────
+        st.markdown("### Step 2 of 3 — Competitor Analysis")
+        step2_status = st.empty()
+
+        if not pipe_selected_comps:
+            step2_status.warning("No competitors selected — skipping competitor analysis.")
+            competitor_result = "(No competitor analysis was run — no competitors were selected.)"
+        else:
+            step2_status.info("Running competitor analysis...")
+
+            with st.expander("Competitor analysis output", expanded=True):
+                step2_area = st.empty()
+                step2_buffer = []
+
+                def on_step2_chunk(text):
+                    step2_buffer.append(text)
+                    step2_area.markdown("".join(step2_buffer))
+
+                selected_details = [c for c in pipe_social_list if c["name"] in pipe_selected_comps]
+                competitor_lines = "\n".join(
+                    f"- {c['name']} ({', '.join(c.get('platforms', []))}): {c.get('notes', '')}"
+                    for c in selected_details
+                )
+
+                competitor_msg = (
+                    f"Analyse the following competitors for Digital Wellness:\n\n"
+                    f"{competitor_lines}\n\n"
+                    f"Market: {pipe_market}\n\n"
+                    f"Context: We are preparing to produce video content for TikTok, Instagram, YouTube, "
+                    f"and Facebook. We need to understand what hooks, formats, and topics are working for "
+                    f"these competitors so we can identify gaps and opportunities for our science-backed "
+                    f"content (CSIRO Total Wellbeing Diet / Mayo Clinic Diet).\n\n"
+                    f"Research context informing this analysis:\n{research_result[:2000]}\n\n"
+                    f"{pipe_extra}"
+                ).strip()
+
+                try:
+                    competitor_result = run_analysis(
+                        load_agent_prompt(SOCIAL_AGENT_PATH),
+                        competitor_msg,
+                        on_chunk=on_step2_chunk,
+                    )
+                    slug = "multi" if len(pipe_selected_comps) > 1 else slugify(pipe_selected_comps[0])
+                    report_path = REPORTS_DIR / f"pipeline-competitor-{slug}-{today}.md"
+                    report_path.write_text(competitor_result)
+                    step2_status.success(f"Competitor analysis complete — saved to `{report_path.name}`")
+                except Exception as e:
+                    step2_status.error(f"Competitor analysis step failed: {e}")
+                    st.stop()
+
+        # ── Step 3: Video Ideas ───────────────────────────────────────────────
+        st.markdown("### Step 3 of 3 — Video Ideas")
+        step3_status = st.empty()
+        step3_status.info("Generating video ideas and production briefs...")
+
+        with st.expander("Video ideas & briefs", expanded=True):
+            step3_area = st.empty()
+            step3_buffer = []
+
+            def on_step3_chunk(text):
+                step3_buffer.append(text)
+                step3_area.markdown("".join(step3_buffer))
+
+            video_msg = (
+                f"Generate video content ideas and production briefs for Digital Wellness.\n\n"
+                f"Market: {pipe_market}\n\n"
+                f"--- RESEARCH FINDINGS ---\n{research_result}\n\n"
+                f"--- COMPETITOR ANALYSIS ---\n{competitor_result}\n\n"
+                f"Using the research trends and competitor intelligence above, generate:\n"
+                f"1. A ranked list of 10–15 video concepts\n"
+                f"2. Full production briefs for the top 3 concepts\n\n"
+                f"Prioritise ideas that exploit gaps the competitors are not filling and that leverage "
+                f"our institutional science credibility (CSIRO / Mayo Clinic) in ways they cannot match.\n\n"
+                f"{pipe_extra}"
+            ).strip()
+
+            try:
+                video_result = run_analysis(
+                    load_agent_prompt(VIDEO_AGENT_PATH),
+                    video_msg,
+                    on_chunk=on_step3_chunk,
+                )
+                report_path = REPORTS_DIR / f"pipeline-video-ideas-{today}.md"
+                report_path.write_text(video_result)
+                step3_status.success(f"Video ideas complete — saved to `{report_path.name}`")
+            except Exception as e:
+                step3_status.error(f"Video ideas step failed: {e}")
+                st.stop()
+
+        st.markdown("---")
+        st.success(
+            "Pipeline complete! All three reports saved to the Reports tab. "
+            "Start with the video briefs — they're ready to hand to a creator."
+        )
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# TAB 4 — OWN CONTENT AUDIT
+# ════════════════════════════════════════════════════════════════════════════
+with tab_own:
+    st.header("Own Content Audit")
+    st.caption(
+        "Scrape your own social accounts, classify each post by content pillar, "
+        "and identify which pillars are over- or under-indexed relative to engagement."
+    )
+
+    own_data = load_own_accounts()
+    accounts_list = own_data.get("accounts", [])
+    pillars = load_pillars()
+
+    # ── Account handles ───────────────────────────────────────────────────────
+    col_accounts, col_pillars = st.columns([3, 2])
+
+    with col_accounts:
+        st.subheader("Account Handles")
+        st.caption("Edit your own social media handles below. Changes are saved immediately.")
+
+        PLATFORMS = ["instagram", "facebook", "tiktok", "youtube", "linkedin"]
+
+        for idx, account in enumerate(accounts_list):
+            with st.expander(
+                f"**{account['brand']}** ({account.get('market', '')})",
+                expanded=True,
+            ):
+                with st.form(f"account_form_{idx}"):
+                    new_brand = st.text_input("Brand name", value=account.get("brand", ""), key=f"brand_{idx}")
+                    new_market = st.selectbox(
+                        "Market",
+                        ["AU", "US", "Both"],
+                        index=["AU", "US", "Both"].index(account.get("market", "AU"))
+                        if account.get("market", "AU") in ["AU", "US", "Both"] else 0,
+                        key=f"market_{idx}",
+                    )
+                    new_handles = {}
+                    for plat in PLATFORMS:
+                        new_handles[plat] = st.text_input(
+                            plat.capitalize(),
+                            value=account.get(plat, ""),
+                            placeholder=f"e.g. @handle or page name",
+                            key=f"{plat}_{idx}",
+                        )
+                    save_col, del_col = st.columns([3, 1])
+                    with save_col:
+                        if st.form_submit_button("Save", use_container_width=True):
+                            accounts_list[idx] = {"brand": new_brand, "market": new_market, **new_handles}
+                            own_data["accounts"] = accounts_list
+                            save_own_accounts(own_data)
+                            st.success("Saved.")
+                            st.rerun()
+                    with del_col:
+                        if st.form_submit_button("Remove", use_container_width=True):
+                            accounts_list.pop(idx)
+                            own_data["accounts"] = accounts_list
+                            save_own_accounts(own_data)
+                            st.rerun()
+
+        with st.form("add_account_form", clear_on_submit=True):
+            st.markdown("**Add Account**")
+            a_brand = st.text_input("Brand name", placeholder="e.g. CSIRO Total Wellbeing Diet")
+            a_market = st.selectbox("Market", ["AU", "US", "Both"])
+            a_handles = {plat: st.text_input(plat.capitalize(), placeholder="", key=f"new_{plat}") for plat in PLATFORMS}
+            if st.form_submit_button("Add Account", use_container_width=True):
+                if a_brand:
+                    accounts_list.append({"brand": a_brand, "market": a_market, **a_handles})
+                    own_data["accounts"] = accounts_list
+                    save_own_accounts(own_data)
+                    st.success(f"Added {a_brand}")
+                    st.rerun()
+
+    with col_pillars:
+        st.subheader("Content Pillars")
+        st.caption("Posts will be classified into these 7 pillars.")
+        for pillar in pillars:
+            with st.expander(f"**{pillar['name']}**"):
+                st.markdown(pillar["description"])
+                st.caption("Keywords: " + ", ".join(pillar.get("keywords", [])))
+
+    st.divider()
+
+    # ── Run audit ─────────────────────────────────────────────────────────────
+    st.subheader("Run Content Audit")
+
+    if not accounts_list:
+        st.warning("Add at least one account above before running an audit.")
+    else:
+        own_col1, own_col2 = st.columns(2)
+
+        with own_col1:
+            selected_brands = st.multiselect(
+                "Accounts to audit",
+                [a["brand"] for a in accounts_list],
+                default=[a["brand"] for a in accounts_list],
+            )
+            own_platforms = st.multiselect(
+                "Platforms to scrape",
+                PLATFORMS,
+                default=["instagram", "tiktok", "youtube"],
+                help="The agent will pull recent posts from these platforms for each selected account.",
+            )
+
+        with own_col2:
+            own_market = st.radio(
+                "Market focus",
+                ["Both AU & US", "Australia only (CSIRO TWD)", "United States only (Mayo Clinic Diet)"],
+            )
+            own_extra = st.text_area(
+                "Additional instructions (optional)",
+                placeholder="e.g. Focus on the last 3 months only. Flag any posts related to GLP-1. "
+                             "Pay particular attention to which pillars are missing on TikTok.",
+                height=100,
+            )
+
+        run_own_col, _ = st.columns([2, 3])
+        with run_own_col:
+            run_own = st.button(
+                "🔍 Run Own Content Audit",
+                use_container_width=True,
+                type="primary",
+                disabled=not selected_brands or not own_platforms,
+            )
+
+        if run_own:
+            selected_account_details = [a for a in accounts_list if a["brand"] in selected_brands]
+
+            account_lines = []
+            for a in selected_account_details:
+                handle_parts = [
+                    f"{plat}: {a.get(plat, '').strip()}"
+                    for plat in own_platforms
+                    if a.get(plat, "").strip()
+                ]
+                if handle_parts:
+                    account_lines.append(
+                        f"- {a['brand']} ({a.get('market', '')}) — "
+                        + ", ".join(handle_parts)
+                    )
+
+            pillar_summary = "\n".join(
+                f"{i+1}. **{p['name']}**: {p['description']}"
+                for i, p in enumerate(pillars)
+            )
+
+            user_msg = (
+                f"Please audit the following Digital Wellness social media accounts:\n\n"
+                f"{chr(10).join(account_lines)}\n\n"
+                f"Platforms to scrape: {', '.join(own_platforms)}\n\n"
+                f"Market focus: {own_market}\n\n"
+                f"Classify each post into one of these 7 content pillars:\n{pillar_summary}\n\n"
+                f"For each pillar, calculate post count, percentage of total, average engagement, "
+                f"and identify the best-performing post. Then provide a gap analysis and strategic "
+                f"recommendations.\n\n"
+                f"{own_extra}"
+            ).strip()
+
+            system_prompt = load_agent_prompt(OWN_CONTENT_AGENT_PATH)
+
+            with st.spinner("Scraping and classifying content — this may take a couple of minutes..."):
+                own_output_area = st.empty()
+                own_buffer = []
+
+                def on_own_chunk(text):
+                    own_buffer.append(text)
+                    own_output_area.markdown("".join(own_buffer))
+
+                try:
+                    result = run_analysis(system_prompt, user_msg, on_chunk=on_own_chunk)
+                    today = datetime.date.today().strftime("%Y-%m-%d")
+                    brand_slug = slugify(selected_brands[0]) if len(selected_brands) == 1 else "multi"
+                    report_path = REPORTS_DIR / f"own-content-audit-{brand_slug}-{today}.md"
+                    report_path.write_text(result)
+                    st.success(f"Audit complete! Saved to `{report_path.name}`")
+                except ValueError as e:
+                    st.error(str(e))
+                except Exception as e:
+                    st.error(f"Audit failed: {e}")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# TAB 5 — REPORTS LIBRARY
 # ════════════════════════════════════════════════════════════════════════════
 with tab_reports:
     st.header("Reports Library")

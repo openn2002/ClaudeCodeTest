@@ -1,0 +1,46 @@
+{
+  "pillars": [
+    {
+      "id": "science_credibility",
+      "name": "Science & Credibility",
+      "description": "Content anchored in CSIRO or Mayo Clinic research, clinical data, peer-reviewed evidence, or program outcome statistics. The institutional authority angle — no competitor can match this.",
+      "keywords": ["research", "study", "science", "CSIRO", "Mayo Clinic", "clinical", "evidence", "data", "proven", "published", "peer-reviewed", "dietitian", "accredited"]
+    },
+    {
+      "id": "weight_loss_results",
+      "name": "Weight Loss Results",
+      "description": "Transformation stories, member testimonials, before/after journeys, and program outcome data. Social proof that the program works — real people, real numbers.",
+      "keywords": ["lost", "weight loss", "transformation", "results", "member", "story", "journey", "before", "after", "kilos", "pounds", "lbs", "kg", "success", "testimonial"]
+    },
+    {
+      "id": "nutrition_meals",
+      "name": "Nutrition & Meal Planning",
+      "description": "Recipes, meal plans, food education, high-protein eating, low-GI guidance, and practical nutrition tips. The 'what to eat' content that drives saves and shares.",
+      "keywords": ["recipe", "meal", "food", "eat", "nutrition", "protein", "diet", "healthy", "cook", "ingredient", "plan", "breakfast", "lunch", "dinner", "snack", "GI", "low-GI"]
+    },
+    {
+      "id": "habit_behaviour",
+      "name": "Habit & Behaviour Change",
+      "description": "Sustainable habits, mindset shifts, behaviour science, and lifestyle change. The 'how to stick with it' content — motivation, consistency, and the psychology behind lasting change.",
+      "keywords": ["habit", "mindset", "lifestyle", "behaviour", "behavior", "change", "consistent", "routine", "motivation", "goal", "sustainable", "long-term", "tip", "strategy"]
+    },
+    {
+      "id": "glp1_medication",
+      "name": "GLP-1 & Medication Support",
+      "description": "Content for people using or considering GLP-1 weight loss medications (Ozempic, Wegovy, Mounjaro, etc.). Positions the program as the ideal structure and support layer alongside medication.",
+      "keywords": ["GLP-1", "Ozempic", "Wegovy", "Mounjaro", "semaglutide", "medication", "injection", "weight loss drug", "tirzepatide", "liraglutide", "compound", "prescription"]
+    },
+    {
+      "id": "exercise_movement",
+      "name": "Exercise & Movement",
+      "description": "Activity plans, fitness tips, movement for different fitness levels and ages, and the role of exercise in weight management. Accessible, encouraging, non-intimidating.",
+      "keywords": ["exercise", "workout", "movement", "fitness", "walk", "active", "strength", "cardio", "steps", "gym", "activity", "physical", "training", "sport"]
+    },
+    {
+      "id": "promotion_offers",
+      "name": "Promotion & Offers",
+      "description": "Program sign-ups, pricing announcements, sales campaigns, health fund discounts, limited-time offers, and product launches. Direct conversion content.",
+      "keywords": ["join", "sign up", "offer", "discount", "price", "sale", "start", "today", "free", "trial", "deal", "save", "limited", "health fund", "HCF", "TUH", "subscription"]
+    }
+  ]
+}
