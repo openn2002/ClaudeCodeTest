@@ -1,0 +1,4 @@
+higgsfield-client>=0.1.0
+requests>=2.31.0
+openai>=1.0.0          # for OpenAI TTS fallback
+elevenlabs>=1.0.0      # for ElevenLabs TTS (preferred)
