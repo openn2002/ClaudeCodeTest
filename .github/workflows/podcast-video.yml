@@ -1,0 +1,128 @@
+name: Podcast Video — Generate Nicole Talking Head
+
+on:
+  workflow_dispatch:
+    inputs:
+      concept_slug:
+        description: "Short name for the video (used in filenames), e.g. glp1-muscle-loss"
+        required: true
+        type: string
+      script:
+        description: "The podcast script text (paste full script here)"
+        required: true
+        type: string
+      target_seconds:
+        description: "Target video length in seconds"
+        required: false
+        default: "60"
+        type: string
+      add_lower_third:
+        description: "Burn in Nicole's name + title overlay"
+        required: false
+        default: "true"
+        type: boolean
+      tts_provider:
+        description: "TTS voice provider"
+        required: false
+        default: "elevenlabs"
+        type: choice
+        options:
+          - elevenlabs
+          - openai
+      use_fallback_model:
+        description: "Use Kling Avatar (15s, low credits) instead of InfiniteTalk — good for testing"
+        required: false
+        default: "false"
+        type: boolean
+
+jobs:
+  generate-video:
+    runs-on: ubuntu-latest     # ffmpeg is pre-installed on ubuntu-latest runners
+    timeout-minutes: 30
+
+    steps:
+      # ── Checkout ─────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Python setup ─────────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: agents/podcast-video-agent/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r agents/podcast-video-agent/requirements.txt
+
+      # ── Confirm ffmpeg is available ───────────────────────────────────────────
+      - name: Check ffmpeg version
+        run: ffmpeg -version | head -1
+
+      # ── Write script to temp file ─────────────────────────────────────────────
+      - name: Write script to file
+        run: |
+          cat > /tmp/podcast_script.txt << 'SCRIPT_EOF'
+          ${{ github.event.inputs.script }}
+          SCRIPT_EOF
+
+      # ── Run the agent ─────────────────────────────────────────────────────────
+      - name: Run Podcast Video Agent
+        env:
+          # Higgsfield — set HIGGSFIELD_BACKEND to "segmind" (default, works with Ultimate plan)
+          # or "higgsfield" (requires Creator plan, $149/mo)
+          HIGGSFIELD_BACKEND:    segmind
+          SEGMIND_API_KEY:       ${{ secrets.SEGMIND_API_KEY }}
+          HF_KEY:                ${{ secrets.HF_KEY }}
+          ELEVENLABS_API_KEY:    ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID:   ${{ secrets.ELEVENLABS_VOICE_ID }}
+          OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
+          TTS_PROVIDER:          ${{ github.event.inputs.tts_provider }}
+          BG_MUSIC_PATH:         agents/podcast-video-agent/assets/background_music.mp3
+        run: |
+          cd agents/podcast-video-agent
+          python agent.py \
+            --script  /tmp/podcast_script.txt \
+            --image   assets/nicole_portrait.jpg \
+            --concept "${{ github.event.inputs.concept_slug }}" \
+            --target-seconds "${{ github.event.inputs.target_seconds }}" \
+            ${{ github.event.inputs.add_lower_third == 'false' && '--no-lower-third' || '' }} \
+            ${{ github.event.inputs.use_fallback_model == 'true' && '--use-fallback-model' || '' }} \
+            --output-json /tmp/result.json
+
+      # ── Print summary ─────────────────────────────────────────────────────────
+      - name: Print result summary
+        run: |
+          echo "## Video Generation Result" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/result.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          # Also print estimated duration and any warnings
+          SECS=$(cat /tmp/result.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['estimated_secs'])")
+          WORDS=$(cat /tmp/result.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['word_count'])")
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Words:** $WORDS | **Estimated duration:** ${SECS}s" >> $GITHUB_STEP_SUMMARY
+
+      # ── Upload video outputs as downloadable artifacts ─────────────────────────
+      - name: Upload video exports
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.inputs.concept_slug }}-videos"
+          path: |
+            agents/podcast-video-agent/output/${{ github.event.inputs.concept_slug }}_reels.mp4
+            agents/podcast-video-agent/output/${{ github.event.inputs.concept_slug }}_youtube.mp4
+            agents/podcast-video-agent/output/${{ github.event.inputs.concept_slug }}_square.mp4
+          retention-days: 14
+
+      # ── Upload raw files as separate artifact (archive) ───────────────────────
+      - name: Upload raw files (audio + unprocessed video)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.inputs.concept_slug }}-raw"
+          path: |
+            agents/podcast-video-agent/output/${{ github.event.inputs.concept_slug }}_raw.mp4
+            agents/podcast-video-agent/output/${{ github.event.inputs.concept_slug }}_voiceover.mp3
+          retention-days: 7

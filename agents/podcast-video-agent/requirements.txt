@@ -1,4 +1,6 @@
-higgsfield-client>=0.1.0
 requests>=2.31.0
 openai>=1.0.0          # for OpenAI TTS fallback
-elevenlabs>=1.0.0      # for ElevenLabs TTS (preferred)
+elevenlabs>=1.0.0      # for ElevenLabs TTS (preferred — voice cloning)
+
+# Only needed if HIGGSFIELD_BACKEND=higgsfield (Creator plan, $149/mo)
+# higgsfield-client>=0.1.0

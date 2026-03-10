@@ -7,8 +7,19 @@ Set all secrets via environment variables — never hardcode keys here.
 import os
 
 # ── Higgsfield ───────────────────────────────────────────────────────────────
-# Format: "key-id:key-secret"  (Creator plan or above required for API access)
+# !! IMPORTANT: API access requires the Creator plan ($149/mo) — NOT Ultimate ($49/mo).
+#    If you're on Ultimate, use HIGGSFIELD_BACKEND = "segmind" below instead.
+#
+# Format: "key-id:key-secret"
 HIGGSFIELD_API_KEY = os.environ.get("HF_KEY", "")
+
+# Choose backend:
+#   "higgsfield" — official SDK (requires Creator plan, $149/mo)
+#   "segmind"    — pay-per-generation via Segmind (~$0.86/video, no subscription needed)
+HIGGSFIELD_BACKEND = os.environ.get("HIGGSFIELD_BACKEND", "segmind")
+
+# Segmind API key — get one free at segmind.com (pay-per-use, no subscription)
+SEGMIND_API_KEY = os.environ.get("SEGMIND_API_KEY", "")
 
 # Model paths (confirm exact strings in your Higgsfield Cloud dashboard)
 # InfiniteTalk: image + audio → infinite-length lip-synced talking head video
