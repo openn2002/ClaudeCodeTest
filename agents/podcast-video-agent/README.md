@@ -1,7 +1,7 @@
 # Digital Wellness — Podcast Video Agent
 
-Turns a written podcast script into a branded AI talking-head video of Nicole,
-using Higgsfield's `InfiniteTalk` model for lip-sync and ElevenLabs for voice.
+Turns a written podcast script into a branded AI talking-head video,
+using Segmind (Higgsfield lipsync) and ElevenLabs for voice.
 
 ---
 
@@ -14,18 +14,18 @@ Script text (.txt)
 [1] ScriptProcessor   ── strips notes, validates length, estimates duration
     │
     ▼
-[2] TTSGenerator       ── ElevenLabs (Nicole's cloned voice) → voiceover.mp3
+[2] TTSGenerator       ── ElevenLabs (cloned voice) → voiceover.mp3
     │
     ▼
-[3] HiggsfieldClient  ── nicole.jpg + voiceover.mp3 → InfiniteTalk → raw_video.mp4
+[3] HiggsfieldClient  ── portrait.jpg + voiceover.mp3 → Segmind API → raw_video.mp4
     │
     ▼
-[4] PostProcessor      ── ffmpeg: crop/pad + lower-third + background music
+[4] PostProcessor      ── ffmpeg: crop/pad to 9:16 / 16:9 / 1:1 + lower-third + music
     │
     ▼
-Output: concept-name_reels.mp4 (9:16)
-        concept-name_youtube.mp4 (16:9)
-        concept-name_square.mp4 (1:1)
+Output: concept-name_reels.mp4   ← drop this into Captions.AI for final captions/edits
+        concept-name_youtube.mp4
+        concept-name_square.mp4
 ```
 
 ---
@@ -43,28 +43,33 @@ pip install -r requirements.txt
 
 ### 2. Set environment variables
 
+Copy these into `.env` in the repo root:
+
 ```bash
-# Higgsfield (Creator plan required for API — $149/mo)
-export HF_KEY="your-key-id:your-key-secret"
+# Video generation — Segmind (pay-per-use, ~$0.86/video, no subscription)
+# Get a free API key at: https://www.segmind.com/
+SEGMIND_API_KEY="your-segmind-api-key"
 
-# ElevenLabs (recommended — clone Nicole's voice first)
-export ELEVENLABS_API_KEY="your-elevenlabs-key"
-export ELEVENLABS_VOICE_ID="your-nicole-voice-id"
+# Voice — ElevenLabs (clone your voice first, see step 3 below)
+# Get a key at: https://elevenlabs.io
+ELEVENLABS_API_KEY="your-elevenlabs-api-key"
+ELEVENLABS_VOICE_ID="your-cloned-voice-id"
 
-# Optional: OpenAI TTS as fallback (no voice cloning)
-export TTS_PROVIDER="openai"
-export OPENAI_API_KEY="your-openai-key"
-
-# Optional: background music
-export BG_MUSIC_PATH="/path/to/background_track.mp3"
+# Optional: background music to mix under the voiceover
+BG_MUSIC_PATH="/path/to/background_track.mp3"
 ```
 
-### 3. Clone Nicole's voice in ElevenLabs (one-time setup)
+### 3. Clone your voice in ElevenLabs (one-time setup)
 
 1. Go to [elevenlabs.io](https://elevenlabs.io) → **Voices** → **Add Voice** → **Instant Voice Clone**
-2. Upload 1–5 minutes of clean Nicole audio (no background noise)
-3. Copy the Voice ID from the dashboard
-4. Set `ELEVENLABS_VOICE_ID` to that ID
+2. Upload 1–5 minutes of clean audio of yourself (no background noise)
+3. Copy the **Voice ID** from the dashboard
+4. Paste it as `ELEVENLABS_VOICE_ID` in `.env`
+
+### 4. Prepare a portrait photo
+
+Supply a portrait image each time you run — `.jpg` or `.png`, good lighting,
+front-facing. Pass it via `--image`. Change it whenever you like.
 
 ---
 
@@ -75,7 +80,7 @@ export BG_MUSIC_PATH="/path/to/background_track.mp3"
 ```bash
 python agent.py \
   --script  scripts/glp1_muscle_loss.txt \
-  --image   assets/nicole_portrait.jpg \
+  --image   /path/to/your_portrait.jpg \
   --concept glp1-muscle-loss \
   --target-seconds 60
 ```
@@ -87,7 +92,7 @@ from agent import run
 
 result = run(
     script_text=open("scripts/glp1_muscle_loss.txt").read(),
-    image_path="assets/nicole_portrait.jpg",
+    image_path="/path/to/your_portrait.jpg",
     concept_slug="glp1-muscle-loss",
     target_seconds=60,
 )
@@ -102,44 +107,43 @@ print(result["exports"])
 
 | File | Format | Use |
 |------|--------|-----|
-| `{concept}_reels.mp4`   | 1080×1920 (9:16) | TikTok, Instagram Reels |
-| `{concept}_youtube.mp4` | 1920×1080 (16:9) | YouTube, horizontal |
-| `{concept}_square.mp4`  | 1080×1080 (1:1)  | Facebook |
-| `{concept}_raw.mp4`     | Original Higgsfield output | Archive |
-| `{concept}_voiceover.mp3` | Audio only | Archive |
+| `{concept}_reels.mp4`     | 1080×1920 (9:16) | Drop into Captions.AI → TikTok / Instagram Reels |
+| `{concept}_youtube.mp4`   | 1920×1080 (16:9) | YouTube |
+| `{concept}_square.mp4`    | 1080×1080 (1:1)  | Facebook |
+| `{concept}_raw.mp4`       | Original output  | Archive |
+| `{concept}_voiceover.mp3` | Audio only       | Archive |
 
 ---
 
-## Key Notes
+## Cost per Video
 
-### Higgsfield Model: InfiniteTalk
-- **Input:** portrait image + audio file
-- **Output:** lip-synced talking-head video of any length
-- **API access:** requires Creator plan ($149/mo) at [cloud.higgsfield.ai](https://cloud.higgsfield.ai)
-- **Alternative:** [Segmind pay-per-generation](https://www.segmind.com/models/higgsfield-speech2video) (no subscription needed — good for prototyping)
+| Service | Cost |
+|---------|------|
+| Segmind (Higgsfield lipsync) | ~$0.86/video |
+| ElevenLabs TTS | ~$0.30 per 30s script (Creator plan) |
+| ffmpeg | Free |
+| **Total** | **~$1.16/video** |
 
-### Model Paths
-The exact model path strings for `InfiniteTalk` and `Kling AI Avatar` need to be
-confirmed in your Higgsfield Cloud dashboard — the API uses the same SDK pattern
-for all models, only the path string changes. Update `config.py` once confirmed.
+---
 
-### Script Length Guidelines
-| Video type | Target length | ~Word count |
-|---|---|---|
-| Short-form (TikTok/Reels) | 30–60s | 70–140 words |
+## Script Length Guidelines
+
+| Format | Target length | ~Word count |
+|--------|--------------|-------------|
+| TikTok / Reels | 30–60s | 70–140 words |
 | YouTube Short | 60s | ~140 words |
 | Long-form segment | 3–5 min | 420–700 words |
 
 ---
 
-## Cost Estimate (per video)
+## Advanced: Direct Higgsfield SDK (optional)
 
-| Service | Cost |
-|---|---|
-| Higgsfield Creator plan | $149/mo (covers ~6,000 credits) |
-| ElevenLabs (voice cloning + TTS) | ~$0.30 per 30s script (Creator plan) |
-| ffmpeg | Free |
-| **Total per video** | **~$0.30 + Higgsfield credits** |
+If you later want unlimited video length via the InfiniteTalk model (requires
+Higgsfield Creator plan at $149/mo), set:
 
-For low-volume testing, the Segmind pay-per-generation route for Higgsfield
-avoids the $149/mo commitment.
+```bash
+HIGGSFIELD_BACKEND="higgsfield"
+HF_KEY="your-key-id:your-key-secret"
+```
+
+Segmind is recommended for normal use — same quality, no subscription.
