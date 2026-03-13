@@ -1,0 +1,108 @@
+{
+  "_comment": "Health/wellness industry benchmarks — Meta Ads AU. Edit to match your own targets once you have 90+ days of data.",
+  "market": "AU",
+  "platform": "meta",
+  "updated": "2026-03-13",
+  "thresholds": {
+    "ctr": {
+      "good": 2.0,
+      "warn": 1.0,
+      "unit": "%",
+      "direction": "higher_is_better",
+      "note": "Industry avg health/wellness AU: 1.0–1.5%. Above 2% = strong."
+    },
+    "cpm": {
+      "good": 12.0,
+      "warn": 18.0,
+      "unit": "AUD",
+      "direction": "lower_is_better",
+      "note": "Health/wellness AU Meta CPM typically $8–15. >$18 = audience fatigue or broad targeting issue."
+    },
+    "cpc": {
+      "good": 1.50,
+      "warn": 2.50,
+      "unit": "AUD",
+      "direction": "lower_is_better"
+    },
+    "cpa": {
+      "good": 45.0,
+      "warn": 80.0,
+      "unit": "AUD",
+      "direction": "lower_is_better",
+      "note": "Target CPA for TWD 12-week program ($299 product) is <$45. Fast Start ($149) target <$30."
+    },
+    "roas": {
+      "good": 3.0,
+      "warn": 1.5,
+      "unit": "x",
+      "direction": "higher_is_better"
+    },
+    "frequency": {
+      "warn": 3.5,
+      "bad": 5.0,
+      "unit": "x",
+      "direction": "lower_is_better",
+      "note": "3.5–5.0 = watch for creative fatigue. >5.0 = fatigued — rotate or pause."
+    }
+  },
+  "fatigue_rules": [
+    {
+      "rule": "frequency_high",
+      "condition": "frequency > 5.0",
+      "status": "fatigued",
+      "action": "Rotate creative immediately"
+    },
+    {
+      "rule": "ctr_very_low",
+      "condition": "ctr < 0.8",
+      "status": "fatigued",
+      "action": "Pause or replace headline/creative"
+    },
+    {
+      "rule": "frequency_elevated",
+      "condition": "frequency >= 3.5 AND frequency <= 5.0",
+      "status": "watch",
+      "action": "Prepare replacement creative"
+    },
+    {
+      "rule": "ctr_below_benchmark",
+      "condition": "ctr >= 0.8 AND ctr < 1.0",
+      "status": "watch",
+      "action": "A/B test new headline"
+    },
+    {
+      "rule": "cpm_high",
+      "condition": "cpm > 18.0",
+      "status": "watch",
+      "action": "Check audience overlap and refresh targeting"
+    },
+    {
+      "rule": "cpa_above_target",
+      "condition": "cpa > 80.0",
+      "status": "watch",
+      "action": "Review landing page and offer alignment with ad copy"
+    }
+  ],
+  "reporting_cadences": {
+    "daily": {
+      "metrics": ["fatigued_ads", "ctr_alerts", "spend_today", "cpa_today"],
+      "slack_digest": true,
+      "run_at": "08:00 AEST"
+    },
+    "weekly": {
+      "metrics": ["spend_wow", "ctr_wow", "cpa_wow", "top_performers", "underperformers", "new_fatigue"],
+      "slack_digest": true,
+      "run_at": "Monday 08:00 AEST"
+    },
+    "fortnightly": {
+      "metrics": ["spend_trend", "creative_rotation_needed", "audience_saturation"],
+      "slack_digest": false,
+      "run_at": "Monday 08:00 AEST (bi-weekly)"
+    },
+    "monthly": {
+      "metrics": ["full_performance_review", "benchmark_comparison", "memory_outcomes", "next_month_recommendations"],
+      "slack_digest": true,
+      "run_at": "1st of month 08:00 AEST"
+    }
+  }
+}

@@ -117,12 +117,17 @@ print(result["exports"])
 
 ## Cost per Video
 
+Segmind pricing for **Kling V2 Pro Avatar** is per-second of output video.
+
 | Service | Cost |
 |---------|------|
-| Segmind (Higgsfield lipsync) | ~$0.86/video |
+| Segmind — Kling V2 Pro Avatar | ~$6.40 per ~47s video (~$0.136/s) |
 | ElevenLabs TTS | ~$0.30 per 30s script (Creator plan) |
 | ffmpeg | Free |
-| **Total** | **~$1.16/video** |
+| **Total (60s video)** | **~$8–9/video** |
+
+> **Note:** For high-volume use, the Higgsfield Creator plan ($149/mo) becomes
+> cost-effective at ~20+ videos/month. Segmind is best for low-volume testing.
 
 ---
 

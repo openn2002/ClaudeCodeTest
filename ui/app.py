@@ -18,6 +18,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
+from modules.ad_performance import render_ad_performance_tab
+
 import anthropic
 import streamlit as st
 
@@ -144,12 +146,13 @@ with st.sidebar:
     st.caption(f"Reports saved to `{REPORTS_DIR.relative_to(ROOT)}/`")
 
 # ── Main tabs ──────────────────────────────────────────────────────────────────
-tab_social, tab_podcasts, tab_pipeline, tab_own, tab_reports = st.tabs([
+tab_social, tab_podcasts, tab_pipeline, tab_own, tab_reports, tab_ads = st.tabs([
     "📱 Social Media Competitors",
     "🎙️ Podcast Competitors",
     "🎬 Content Pipeline",
     "📊 Own Content",
     "📁 Reports",
+    "📈 Ad Performance",
 ])
 
 
@@ -796,6 +799,10 @@ with tab_own:
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 5 — REPORTS LIBRARY
 # ════════════════════════════════════════════════════════════════════════════
+with tab_ads:
+    render_ad_performance_tab()
+
+
 with tab_reports:
     st.header("Reports Library")
     st.caption("All generated competitor analysis reports. Click to view or download.")
