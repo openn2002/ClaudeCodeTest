@@ -1,3 +1,14 @@
 anthropic>=0.40.0
 streamlit>=1.40.0
 python-dotenv>=1.0.0
+
+# Ad Performance dashboard
+pandas>=2.0.0
+plotly>=5.0.0
+
+# Slack integration
+slack-sdk>=3.27.0
+
+# Slack webhook server (run separately: python ui/slack_webhook.py)
+fastapi>=0.111.0
+uvicorn>=0.30.0
