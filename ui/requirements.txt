@@ -12,3 +12,4 @@ slack-sdk>=3.27.0
 # Slack webhook server (run separately: python ui/slack_webhook.py)
 fastapi>=0.111.0
 uvicorn>=0.30.0
+python-multipart>=0.0.9
